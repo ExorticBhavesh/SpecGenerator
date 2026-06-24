@@ -1,0 +1,1 @@
+{"root":["./src/main.tsx","./src/api/client.ts","./src/api/evaluation.ts","./src/api/pipeline.ts","./src/components/validationpanel.tsx","./src/components/charts/metricscharts.tsx","./src/pages/evaluationpage.tsx","./src/pages/pipelineinspectorpage.tsx","./src/routes/index.tsx","./src/types/pipeline.ts"],"errors":true,"version":"5.6.3"}

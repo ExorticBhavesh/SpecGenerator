@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PipelineStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum StageName {
+  INTENT
+  DESIGN
+  DATABASE
+  API
+  UI
+  CONSISTENCY
+  REPAIR
+  SIMULATION
+}
+
+enum StageStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model PipelineRun {
+  id                String                @id @default(uuid())
+  requirements      String                @db.Text
+  status            PipelineStatus        @default(PENDING)
+  userId            String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  stageResults      PipelineStageResult[]
+  execution         PipelineExecution?
+  repairLogs        RepairLog[]
+  consistencyLogs   ConsistencyLog[]
+
+  @@map("pipeline_runs")
+}
+
+model PipelineStageResult {
+  id            String      @id @default(uuid())
+  pipelineRunId String
+  stage         StageName
+  inputJson     Json
+  outputJson    Json?
+  status        StageStatus @default(PENDING)
+  error         String?
+  durationMs    Int?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  pipelineRun   PipelineRun @relation(fields: [pipelineRunId], references: [id], onDelete: Cascade)
+
+  @@unique([pipelineRunId, stage])
+  @@map("pipeline_stage_results")
+}
+
+model PipelineExecution {
+  id              String         @id @default(uuid())
+  pipelineRunId   String         @unique
+  totalDurationMs Int?
+  status          PipelineStatus @default(PENDING)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  pipelineRun     PipelineRun    @relation(fields: [pipelineRunId], references: [id], onDelete: Cascade)
+
+  @@map("pipeline_executions")
+}
+
+model RepairLog {
+  id            String       @id @default(uuid())
+  pipelineRunId String?
+  repaired      Boolean
+  repairs       Json
+  finalSchema   Json
+  createdAt     DateTime     @default(now())
+  pipelineRun   PipelineRun? @relation(fields: [pipelineRunId], references: [id], onDelete: SetNull)
+
+  @@map("repair_logs")
+}
+
+model ConsistencyLog {
+  id            String       @id @default(uuid())
+  pipelineRunId String?
+  passed        Boolean
+  errors        Json
+  warnings      Json
+  summary       Json
+  createdAt     DateTime     @default(now())
+  pipelineRun   PipelineRun? @relation(fields: [pipelineRunId], references: [id], onDelete: SetNull)
+
+  @@map("consistency_logs")
+}
+
+model EvaluationRun {
+  id                String         @id @default(uuid())
+  status            PipelineStatus @default(PENDING)
+  runs              Json           @default("[]")
+  metrics           Json           @default("{}")
+  successRate       Float          @default(0)
+  averageLatency    Float          @default(0)
+  repairRate        Float          @default(0)
+  repairCount       Int            @default(0)
+  failureTypes      Json           @default("[]")
+  consistencyErrors Int            @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@map("evaluation_runs")
+}
